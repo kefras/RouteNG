@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: routeng-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: routeng
+      POSTGRES_PASSWORD: routeng
+      POSTGRES_DB: routeng
+    ports:
+      - "5432:5432"
+    volumes:
+      - routeng_pgdata:/var/lib/postgresql/data
+
+volumes:
+  routeng_pgdata:
