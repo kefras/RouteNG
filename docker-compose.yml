@@ -8,9 +8,32 @@ services:
       POSTGRES_PASSWORD: routeng
       POSTGRES_DB: routeng
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - routeng_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U routeng -d routeng"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    profiles: ["fullstack"]
+    build: .
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: 4000
+      DATABASE_URL: postgresql://routeng:routeng@postgres:5432/routeng
+      JWT_SECRET: ${JWT_SECRET:-local-compose-only-secret-change-before-production}
+      COOKIE_SECURE: "false"
+      FRONTEND_URL: http://localhost:4000
+    command: sh -c "node src/migrate.js && node src/server.js"
+    ports:
+      - "127.0.0.1:4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   routeng_pgdata:

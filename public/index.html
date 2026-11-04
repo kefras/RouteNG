@@ -1,129 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RouteNG — Travel Together</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <header class="navbar">
-    <a class="brand" href="#top" aria-label="RouteNG home">
-      <span class="brand-mark"><span></span><i></i></span>
-      <span>Route<span>NG</span></span>
-    </a>
-    <nav class="nav-links">
-      <a href="#routes">Popular routes</a>
-      <a href="#earn">Drive & earn</a>
-      <a href="#how">How it works</a>
-      <a href="#safety">Safety</a>
-    </nav>
-    <div class="nav-actions">
-      <button class="icon-btn" aria-label="Search" onclick="document.getElementById('from').focus()">⌕</button>
-      <button class="outline-btn" onclick="openOfferModal()">Offer a ride</button>
-      <button class="avatar" aria-label="Profile">FK</button>
-    </div>
-  </header>
-
-  <main id="top">
-    <section class="hero">
-      <div class="hero-copy">
-        <div class="eyebrow"><span class="dot"></span> Made for movement across Nigeria</div>
-        <h1>Travel together.<br><span>Travel cheaper.</span></h1>
-        <p>Find people heading your way, share the journey and split the cost. From Abuja to Lagos, Jos to Kaduna, and everywhere in between.</p>
-      </div>
-      <div class="hero-art" aria-label="People traveling together in Nigeria">
-        <img src="Naija travel1.png" alt="People traveling together in Nigeria" class="hero-illustration">
-      </div>
-    </section>
-
-    <section class="search-shell" aria-label="Search rides">
-      <div class="search-field">
-        <label for="from">From</label>
-        <select id="from"><option value="">City or pickup point</option></select>
-      </div>
-      <button class="swap" title="Swap locations" onclick="swapLocations()">↔</button>
-      <div class="search-field">
-        <label for="to">To</label>
-        <select id="to"><option value="">City or destination</option></select>
-      </div>
-      <div class="search-field compact">
-        <label for="date">Departure</label>
-        <input id="date" type="date" />
-      </div>
-      <div class="search-field compact passengers-field">
-        <label for="passengers">Passengers</label>
-        <select id="passengers"><option>1 passenger</option><option>2 passengers</option><option>3 passengers</option><option>4 passengers</option></select>
-      </div>
-      <button class="primary-btn search-btn" onclick="searchRides()">Search rides</button>
-    </section>
-
-    <section class="quick-links">
-      <span>Popular:</span>
-      <button onclick="quickSearch('Abuja','Kaduna')">Abuja → Kaduna</button>
-      <button onclick="quickSearch('Abuja','Jos')">Abuja → Jos</button>
-      <button onclick="quickSearch('Lagos','Abuja')">Lagos → Abuja</button>
-      <button onclick="quickSearch('Makurdi','Enugu')">Makurdi → Enugu</button>
-    </section>
-
-    <section class="section" id="results-section" hidden>
-      <div class="section-head"><div><p class="kicker">MATCHING RIDES</p><h2>Rides going your way</h2></div><button class="text-btn" onclick="clearResults()">Clear search</button></div>
-      <div id="results" class="results-grid"></div>
-    </section>
-
-    <section class="section" id="routes">
-      <div class="section-head"><div><p class="kicker">EXPLORE NIGERIA</p><h2>Popular routes at friendly prices</h2></div><button class="text-btn" onclick="showAllRoutes()">View all routes →</button></div>
-      <div class="route-grid" id="route-grid"></div>
-    </section>
-
-    <section class="earn-section" id="earn">
-      <div class="earn-copy">
-        <p class="kicker">TURN YOUR EMPTY SEATS INTO VALUE</p>
-        <h2>Earn up to <span>₦50,000</span> per trip</h2>
-        <p>Do you have a car? Make it work for you (and not the other way around). Earn up to ₦50,000 by carpooling on a 300 km journey with 3 passengers.</p>
-        <button class="primary-btn" onclick="openOfferModal()">Publish your journeys</button>
-        <small>*Illustrative earning example. Actual earnings depend on your route, passenger contribution, seats and agreed price.</small>
-      </div>
-      <div class="hero-art" aria-label="People traveling together in Nigeria">
-        <img src="Naija travel2.png" alt="People traveling together in Nigeria" class="hero-illustration">
-      </div>
-    </section>
-
-    <section class="how-section" id="how">
-      <div class="how-copy"><p class="kicker">HOW ROUTENG WORKS</p><h2>One simple idea:<br><span>don't travel alone.</span></h2><p>Whether you have spare seats or need a seat, RouteNG helps you connect with people on the same route.</p><button class="primary-btn" onclick="openOfferModal()">Offer a ride</button></div>
-      <div class="steps">
-        <div class="step"><b>01</b><div><h3>Search your route</h3><p>Enter where you're leaving from, where you're going and your travel date.</p></div></div>
-        <div class="step"><b>02</b><div><h3>Choose a ride</h3><p>Compare departure times, seats, price and driver information.</p></div></div>
-        <div class="step"><b>03</b><div><h3>Meet & travel</h3><p>Request a seat, agree on the pickup point and share the journey.</p></div></div>
-      </div>
-    </section>
-
-    <section class="safety" id="safety">
-      <div class="shield">✓</div><div><p class="kicker">SAFETY FIRST</p><h2>Built around trust.</h2><p>RouteNG is designed with verified profiles, clear ride details and secure payments in mind. These features can be connected to a real backend as the product grows.</p></div>
-      <div class="safety-points"><span>✓ Verified profiles</span><span>✓ Clear pricing</span><span>✓ Ride requests</span></div>
-    </section>
-  </main>
-
-  <footer><div class="brand footer-brand"><span class="brand-mark"><span></span><i></i></span><span>Route<span>NG</span></span></div><p>Travel Together. Travel Safer. Travel Cheaper.</p><span>© 2026 RouteNG</span></footer>
-
-  <div class="modal-backdrop" id="offer-modal" onclick="closeModal(event)">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" onclick="event.stopPropagation()">
-      <button class="close" onclick="closeOfferModal()">×</button>
-      <p class="kicker">OFFER A RIDE</p><h2 id="modal-title">Got spare seats?</h2><p class="modal-sub">Post your journey and let people going your way join you.</p>
-      <form id="offer-form">
-        <div class="form-row"><label>From<select id="offer-from" required></select></label><label>To<select id="offer-to" required></select></label></div>
-        <div class="form-row"><label>Date<input id="offer-date" type="date" required></label><label>Departure<input id="offer-time" type="time" required></label></div>
-        <div class="form-row"><label>Available seats<select id="offer-seats"><option>1</option><option>2</option><option>3</option><option>4</option></select></label><label>Price / passenger<input id="offer-price" type="number" min="0" placeholder="₦5,000" required></label></div>
-        <label>Vehicle<input id="offer-vehicle" placeholder="Toyota Corolla" required></label>
-        <button class="primary-btn full" type="submit">Publish ride</button>
-      </form>
-    </div>
-  </div>
-
-  <div class="toast" id="toast"></div>
-  <script src="script.js"></script>
-</body>
-</html>
+<!doctype html>
+<html lang="en-NG"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#087f53"><meta name="description" content="Find your people. Share the journey. Rides between Nigerian cities with RouteNG."><title>RouteNG — Good company. Great journeys.</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/style.css"><script src="/script.js" defer></script></head>
+<body><a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header"><div class="container header-inner"><a class="brand" href="/" aria-label="RouteNG home"><span class="brand-symbol">↗</span>Route<span>NG</span><i></i></a><nav aria-label="Main navigation"><a href="#routes">Find a ride</a><a href="#how">How it works</a><a href="#safety">Your safety</a></nav><div class="nav-actions"><button class="button button-outline offer-trigger"><span>＋</span> Publish a ride</button><button class="account-button" id="account-button" aria-expanded="false"><span class="account-icon" data-icon="user"></span><span id="account-label">Log in</span><span data-icon="chevron"></span></button><div class="account-menu" id="account-menu" hidden></div></div></div></header>
+<main id="main">
+<section class="hero container"><div class="hero-copy"><div class="eyebrow"><span class="nigeria-flag"></span> A LITTLE MORE NAIJA. A LOT MORE TOGETHER.</div><h1>Your next journey.<br>Your kind of <em>people.</em></h1><p>Big cities. Hometown visits. New beginnings.<br>Share a ride across Nigeria, and make the journey<br class="desktop-break"> just as good as the destination.</p><div class="hero-proof"><span data-icon="shield"></span>Real people. Shared costs. Better journeys.</div></div><div class="hero-visual"><img src="/Naija%20travel1.png" alt="Two smiling Nigerian travellers ready for their next journey" fetchpriority="high"><div class="photo-shade"></div><span class="photo-label">● &nbsp; DIFFERENT DESTINATIONS. SAME GOOD ENERGY.</span><div class="journey-note"><span class="note-icon" data-icon="route"></span><div><strong>There's a seat with your name on it.</strong><small>Let's find where you're headed.</small></div><span>↗</span></div></div></section>
+<section class="container search-container" aria-label="Find your ride"><div class="search-tabs"><span data-icon="car"></span> Share a ride <span class="tab-tag">GO TOGETHER</span></div><form class="search-bar" id="search-form"><label class="search-field"><span data-icon="circle"></span><span><small>Leaving from</small><input id="from" name="origin" list="cities" placeholder="Your departure city" autocomplete="off"></span></label><button id="swap" class="swap-button" type="button" aria-label="Swap departure and destination">⇄</button><label class="search-field"><span data-icon="pin"></span><span><small>Going to</small><input id="to" name="destination" list="cities" placeholder="Your destination" autocomplete="off"></span></label><label class="search-field date-field"><span data-icon="calendar"></span><span><small>When</small><input id="date" name="date" type="date" aria-label="Departure date"></span></label><label class="search-field passengers-field"><span data-icon="user"></span><span><small>Who's coming?</small><select id="passengers" name="passengers"><option value="1">1 passenger</option><option value="2">2 passengers</option><option value="3">3 passengers</option><option value="4">4 passengers</option></select></span></label><button class="button button-primary search-button" type="submit"><span data-icon="search"></span> Find a ride</button></form><datalist id="cities"></datalist><div class="popular-chips"><span>A few favourites</span><button data-route="Lagos|Ibadan">Lagos <span>→</span> Ibadan</button><button data-route="Abuja|Kaduna">Abuja <span>→</span> Kaduna</button><button data-route="Lagos|Abuja">Lagos <span>→</span> Abuja</button></div></section>
+<section class="container section results-section" id="results-section" hidden><div class="section-heading"><div><span class="eyebrow">YOUR NEXT CHAPTER STARTS HERE</span><h2 id="results-heading">Rides going your way</h2><p id="results-summary" aria-live="polite"></p></div><button class="text-button" id="close-results">Back to exploring <span>×</span></button></div><div class="results-controls"><label>Sort by <select id="sort"><option value="departure">Earliest departure</option><option value="price">Lowest price</option><option value="rating">Highest rated</option></select></label><label><input id="verified-only" type="checkbox"> Verified profiles only</label></div><div id="results" class="results-grid"></div></section>
+<section class="container benefits" aria-label="Why travel with RouteNG"><article><span class="benefit-icon" data-icon="wallet"></span><div><h3>Less on transport. More on life.</h3><p>Split the cost of the journey, without<br>compromising on a comfortable ride.</p></div></article><article><span class="benefit-icon" data-icon="shield"></span><div><h3>Know who you're travelling with.</h3><p>Check profiles, ratings and ride details.<br>Good journeys start with peace of mind.</p></div></article><article><span class="benefit-icon" data-icon="leaf"></span><div><h3>One car. A little more possibility.</h3><p>Fewer empty seats, fewer cars on the road.<br>A small choice that goes a long way.</p></div></article></section>
+<section class="section routes-section" id="routes"><div class="container"><div class="section-heading"><div><span class="eyebrow">FROM HERE TO YOUR EVERYWHERE</span><h2>Naija is calling. Where to?</h2><p>Discover some of our favourite city-to-city journeys.</p></div><button class="text-button" id="browse-rides">Explore all rides <span>↗</span></button></div><div class="route-grid" id="route-grid"></div><p class="route-disclaimer">Sample fares for inspiration. Search your travel date for available rides and current prices.</p></div></section>
+<section class="container section driver-section" id="drive"><div class="driver-photo"><img src="/Naija%20travel2.png" alt="Travellers enjoying a journey together" loading="lazy"><div class="driver-photo-label"><span data-icon="car"></span> Your journey can do more.</div></div><div class="driver-copy"><span class="eyebrow">GOOD COMPANY COMES WITH BENEFITS</span><h2>Going somewhere?<br>Take someone along.</h2><p>Your empty seats could help someone get home.<br>Share your journey, split your fuel costs, and turn<br class="desktop-break"> a familiar road into a new connection.</p><ul class="check-list"><li>Choose your route, schedule and price</li><li>Get to know passengers before you go</li><li>Keep control of who joins your journey</li></ul><button class="button button-primary offer-trigger">Publish your first ride <span>↗</span></button><small>Free to publish. Your car, your journey, your choice.</small></div></section>
+<section class="how-section" id="how"><div class="container"><div class="section-heading centered"><div><span class="eyebrow">LESS PLANNING. MORE LIVING.</span><h2>Your next ride, in three easy steps.</h2></div></div><div class="steps"><article><span class="step-number">01</span><span class="step-icon" data-icon="search"></span><h3>Find your way</h3><p>Tell us where you're headed and when.<br>We'll help you find people going your way.</p></article><article><span class="step-number">02</span><span class="step-icon" data-icon="users"></span><h3>Find your people</h3><p>Compare rides, check driver profiles<br>and request the seat that suits you.</p></article><article><span class="step-number">03</span><span class="step-icon" data-icon="route"></span><h3>Enjoy the journey</h3><p>Once your driver accepts, meet at your<br>pickup point. Next stop: a good journey.</p></article></div></div></section>
+<section class="container section safety-section" id="safety"><div class="safety-graphic"><span data-icon="shield"></span><span class="safety-orbit orbit-one" data-icon="user"></span><span class="safety-orbit orbit-two" data-icon="check"></span></div><div><span class="eyebrow">YOUR PEACE OF MIND TRAVELS WITH YOU</span><h2>Trust is part of the journey.</h2><p>Read profiles and reviews, confirm your pickup point, and share your trip details with someone you trust. A little preparation makes a better journey.</p><button class="text-button" id="safety-guide">Read our travel safety guide <span>↗</span></button></div></section>
+<section class="container faq-section"><div><span class="eyebrow">A FEW THINGS YOU MIGHT BE WONDERING</span><h2>Before you hit the road.</h2></div><div class="faq-list"><details><summary>What is RouteNG?<span>＋</span></summary><p>RouteNG connects drivers with spare seats to passengers travelling between Nigerian cities. You share the journey and contribute towards travel costs.</p></details><details><summary>How do I book a seat?<span>＋</span></summary><p>Search your route and date, open a ride, and request your seats. Your booking is pending until the driver accepts it. Track its status in My trips.</p></details><details><summary>How do payments work?<span>＋</span></summary><p>Your fare is shown before you request a seat. Booking does not charge you. Where online payments are enabled, you can pay from My trips after your driver accepts. Confirm arrangements with your driver before departure.</p></details><details><summary>Can I cancel my booking?<span>＋</span></summary><p>Cancel a pending or accepted booking from My trips before departure. Let your driver know early. If you have already paid, contact support to arrange any applicable refund.</p></details></div></section>
+<section class="closing-banner"><div class="container"><div><span class="eyebrow">SAME DIRECTION. BETTER TOGETHER.</span><h2>There's more to a journey<br>when you share it.</h2></div><button class="button button-white" id="back-to-search">Let's find your ride <span>↗</span></button></div></section>
+</main><footer><div class="container footer-main"><div><a class="brand" href="/"><span class="brand-symbol">↗</span>Route<span>NG</span><i></i></a><p>Good company. Great journeys.<br>Made for the way Nigeria moves.</p><span class="made-in"><span class="nigeria-flag"></span> Proudly Nigerian</span></div><div><h4>Let's go</h4><a href="#routes">Find a ride</a><button class="offer-trigger">Publish a ride</button><button class="trips-trigger">My trips</button></div><div><h4>A little about us</h4><a href="#how">How it works</a><a href="#safety">Trust & safety</a><button id="community-link">Community guidelines</button></div><div><h4>Here to help</h4><button id="help-link">Help centre</button><button id="privacy-link">Privacy</button><button id="terms-link">Terms of use</button></div></div><div class="container footer-bottom"><span>© <span id="year">2026</span> RouteNG. Every journey matters.</span><span>Nigeria &nbsp; • &nbsp; English &nbsp; • &nbsp; NGN ₦</span></div></footer>
+<dialog id="app-dialog" class="app-dialog" aria-labelledby="dialog-title"><div class="dialog-top"><span class="eyebrow" id="dialog-kicker">ROUTENG</span><button id="dialog-close" class="icon-button" aria-label="Close dialog">×</button></div><div id="dialog-content"></div></dialog><div class="toast" id="toast" role="status" aria-live="polite"></div></body></html>

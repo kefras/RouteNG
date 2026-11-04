@@ -75,9 +75,13 @@ CREATE TABLE IF NOT EXISTS bookings (
   payment_reference VARCHAR(120) UNIQUE,
   pickup_point VARCHAR(180),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (ride_id, passenger_id)
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Keep booking history while allowing a cancelled passenger to request again.
+ALTER TABLE bookings DROP CONSTRAINT IF EXISTS bookings_ride_id_passenger_id_key;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_bookings_active_passenger
+  ON bookings(ride_id,passenger_id) WHERE status IN ('PENDING','ACCEPTED');
 
 CREATE INDEX IF NOT EXISTS idx_bookings_passenger ON bookings(passenger_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_bookings_ride ON bookings(ride_id, created_at DESC);

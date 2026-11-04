@@ -9,7 +9,9 @@
     "start": "node src/server.js",
     "db:migrate": "node src/migrate.js",
     "db:seed": "node src/seed.js",
-    "db:setup": "npm run db:migrate && npm run db:seed"
+    "db:setup": "npm run db:migrate && npm run db:seed",
+    "test": "node --test --test-concurrency=1 test/*.test.js",
+    "check": "node --check src/server.js && node --check src/journeys.js && node --check public/script.js"
   },
   "engines": { "node": ">=20" },
   "dependencies": {

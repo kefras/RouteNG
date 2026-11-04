@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.*
+!.env.example
+outputs/
+.sites-runtime/
+.wrangler/
+coverage/
+*.log
