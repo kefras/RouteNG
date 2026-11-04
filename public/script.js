@@ -1,30 +1,763 @@
-const cities=['Abuja','Lagos','Kaduna','Kano','Jos','Makurdi','Enugu','Benin City','Ibadan','Ilorin','Port Harcourt','Zaria','Minna','Lokoja','Lafia','Onitsha','Keffi'];
-let currentUser=null;
-const $=id=>document.getElementById(id);
-const api=async(path,options={})=>{const r=await fetch('/api'+path,{credentials:'include',headers:{'Content-Type':'application/json',...(options.headers||{})},...options});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Request failed');return data;};
-function options(){['from','to','offer-from','offer-to'].forEach(id=>{const s=$(id);if(!s)return;const first=s.options[0]?.textContent||'Select city';s.innerHTML=`<option value="">${first}</option>`+cities.map(c=>`<option value="${c}">${c}</option>`).join('')})}
-function setDefaultDate(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());const x=d.toISOString().slice(0,10);if($('date'))$('date').value=x;if($('offer-date'))$('offer-date').value=x}
-function money(n){return '₦'+Number(n).toLocaleString('en-NG',{maximumFractionDigits:0})}
-function formatDate(s){return new Date(s).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})}
-function time(s){return new Date(s).toLocaleTimeString('en-NG',{hour:'numeric',minute:'2-digit'})}
-function renderRoutes(){const routes=[['Abuja','Kaduna','₦5,000','2h 30m','kad'],['Abuja','Jos','₦7,000','3h 30m','jos'],['Lagos','Abuja','₦18,000','10h','lag'],['Makurdi','Enugu','₦6,500','3h','enu'],['Abuja','Keffi','₦2,500','1h 30m','abj'],['Kaduna','Kano','₦4,500','2h 30m','kad'],['Abuja','Lafia','₦5,500','2h 30m','abj'],['Onitsha','Benin City','₦6,000','2h 30m','enu']];$('route-grid').innerHTML=routes.map(r=>`<article class="route-card" onclick="quickSearch('${r[0]}','${r[1]}')"><div class="route-img ${r[4]}"><span>RouteNG</span></div><div class="route-body"><h3>${r[0]} <span style="color:#94a3b8">→</span> ${r[1]}</h3><div class="route-meta"><span>Typical trip</span><span>${r[3]}</span></div><div class="route-price">${r[2]} <small>/ passenger</small></div></div></article>`).join('')}
-function renderResults(items){const section=$('results-section'),box=$('results');section.hidden=false;if(!items.length){box.innerHTML='<div class="ride-card"><h3>No matching rides yet.</h3><p style="color:#64748b">Try another route/date, or offer a ride yourself.</p><button class="primary-btn" onclick="openOfferModal()">Offer a ride</button></div>';return}box.innerHTML=items.map(r=>`<article class="ride-card"><div class="ride-top"><div class="route-line">${r.origin} → ${r.destination}</div><div class="price">${money(r.priceNaira)}</div></div><div style="color:#64748b;margin-top:6px">${formatDate(r.departureAt)} · ${time(r.departureAt)}</div><div class="ride-details"><div>Seats<strong>${r.seatsAvailable} available</strong></div><div>Vehicle<strong>${r.vehicle?.makeModel||'Not specified'}</strong></div><div>Pickup<strong>${r.pickupPoint}</strong></div><div>Price<strong>${money(r.priceNaira)}/person</strong></div></div><div class="ride-footer"><div class="driver"><span class="driver-avatar">${r.driver.name.split(' ').map(x=>x[0]).join('').slice(0,2)}</span>${r.driver.name}${r.driver.verificationStatus==='VERIFIED'?' ✓':''}</div><button class="outline-btn" onclick="viewRide('${r.id}')">View ride</button></div></article>`).join('');section.scrollIntoView({behavior:'smooth',block:'start'})}
-async function searchRides(){try{const from=$('from').value,to=$('to').value,date=$('date').value,passengers=$('passengers').selectedIndex+1;const qs=new URLSearchParams();if(from)qs.set('origin',from);if(to)qs.set('destination',to);if(date)qs.set('date',date);qs.set('passengers',passengers);const data=await api('/rides?'+qs);renderResults(data.rides)}catch(e){showToast(e.message)}}
-function quickSearch(from,to){$('from').value=from;$('to').value=to;searchRides()}
-function swapLocations(){[$('from').value,$('to').value]=[$('to').value,$('from').value]}
-function clearResults(){$('results-section').hidden=true}
-function showAllRoutes(){renderRoutes();$('routes').scrollIntoView({behavior:'smooth'})}
-async function viewRide(id){try{const {ride}=await api('/rides/'+id);if(!currentUser){showToast('Log in to request a seat.');return}const seats=prompt(`Request seats on ${ride.origin} → ${ride.destination}. Available: ${ride.seatsAvailable}`, '1');if(!seats)return;const b=await api('/rides/'+id+'/book',{method:'POST',body:JSON.stringify({seats:Number(seats),pickupPoint:ride.pickupPoint})});showToast(`Request submitted. Booking ${b.booking.id.slice(0,8)}…`)}catch(e){showToast(e.message)}}
-function openOfferModal(){if(!currentUser){showToast('Log in first to offer a ride.');return}$('offer-modal').classList.add('open');document.body.style.overflow='hidden'}
-function closeOfferModal(){$('offer-modal').classList.remove('open');document.body.style.overflow=''}
-function closeModal(e){if(e.target.id==='offer-modal')closeOfferModal()}
-function showToast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>t.classList.remove('show'),3500)}
-async function initAuth(){try{const d=await api('/auth/me');currentUser=d.user;if(currentUser){document.querySelector('.avatar').textContent=currentUser.fullName.split(' ').map(x=>x[0]).join('').slice(0,2);document.querySelector('.avatar').title=currentUser.fullName}}catch{} }
-async function register(){const fullName=prompt('Full name');const email=prompt('Email');const phone=prompt('Phone');const password=prompt('Password (8+ characters)');if(!fullName||!email||!password)return;try{const d=await api('/auth/register',{method:'POST',body:JSON.stringify({fullName,email,phone,password})});currentUser=d.user;showToast('Account created. You can now offer/request rides.');}catch(e){showToast(e.message)}}
-async function login(){const email=prompt('Email');const password=prompt('Password');if(!email||!password)return;try{const d=await api('/auth/login',{method:'POST',body:JSON.stringify({email,password})});currentUser=d.user;document.querySelector('.avatar').textContent=currentUser.fullName.split(' ').map(x=>x[0]).join('').slice(0,2);showToast(`Welcome, ${currentUser.fullName.split(' ')[0]}!`)}catch(e){showToast(e.message)}}
-$('offer-form').addEventListener('submit',async e=>{e.preventDefault();try{const d=await api('/rides',{method:'POST',body:JSON.stringify({origin:$('offer-from').value,destination:$('offer-to').value,pickupPoint:$('offer-from').value,departureAt:new Date(`${$('offer-date').value}T${$('offer-time').value}:00+01:00`).toISOString(),seatsTotal:Number($('offer-seats').value),priceNaira:Number($('offer-price').value),notes:'Published from RouteNG web app'})});closeOfferModal();e.target.reset();setDefaultDate();showToast('Your ride has been published.');renderResults([d.ride])}catch(e){showToast(e.message)}});
-$('date').min=new Date().toISOString().slice(0,10);$('offer-date').min=$('date').min;options();setDefaultDate();renderRoutes();initAuth();
-// Click avatar: login if signed out, quick account menu if signed in.
-document.querySelector('.avatar').addEventListener('click',async()=>{if(!currentUser)return login();const action=prompt(`Signed in as ${currentUser.fullName}\nType LOGOUT to sign out or BOOKINGS to view your bookings`);if(action?.toUpperCase()==='LOGOUT'){await api('/auth/logout',{method:'POST'});currentUser=null;document.querySelector('.avatar').textContent='FK';showToast('Signed out.')}else if(action?.toUpperCase()==='BOOKINGS'){const d=await api('/bookings/me');showToast(`${d.bookings.length} booking(s) found.`)}});
-// Double-click avatar when signed out opens registration.
-document.querySelector('.avatar').addEventListener('dblclick',register);
+"use strict";
+const $ = (id) => document.getElementById(id);
+const esc = (value) =>
+  String(value ?? "").replace(
+    /[&<>"']/g,
+    (ch) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        ch
+      ],
+  );
+const money = (n) =>
+  new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(n);
+const dateLabel = (s) =>
+  new Date(s).toLocaleDateString("en-NG", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "Africa/Lagos",
+  });
+const timeLabel = (s) =>
+  new Date(s).toLocaleTimeString("en-NG", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Africa/Lagos",
+  });
+const today = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Lagos",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+const initials = (name) =>
+  esc(
+    (name || "RouteNG")
+      .split(" ")
+      .map((x) => x[0])
+      .slice(0, 2)
+      .join(""),
+  );
+const paths = {
+  user: '<circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/>',
+  users:
+    '<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/>',
+  shield:
+    '<path d="M12 2 3.5 6v6c0 5 8.5 10 8.5 10s8.5-5 8.5-10V6L12 2Z"/><path d="m8 12 3 3 5-6"/>',
+  car: '<path d="m4 9 2-5h12l2 5M3 10h18v8H3zM5 18v3M19 18v3M7 14h1M16 14h1"/>',
+  route:
+    '<circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M5 7v9a3 3 0 0 0 6 0V8a4 4 0 0 1 8 0v9"/>',
+  pin: '<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
+  search: '<circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/>',
+  circle: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/>',
+  calendar:
+    '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6M17 2v6M3 11h18M7 15h3M14 15h3"/>',
+  wallet:
+    '<path d="M20 7H5a2 2 0 0 1 0-4h13v4M3 5v14a2 2 0 0 0 2 2h15V7M20 11h-6v6h6"/><path d="M16 14h1"/>',
+  leaf: '<path d="M20 3C9 2 2 8 5 15c3 8 16 3 15-12ZM4 22 16 9M9 16l-1-5M9 16h6"/>',
+  chevron: '<path d="m6 9 6 6 6-6"/>',
+  check: '<path d="m5 12 4 4L19 6"/>',
+};
+const icon = (name) =>
+  `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.car}</svg>`;
+function hydrateIcons(root = document) {
+  root.querySelectorAll("[data-icon]").forEach((el) => {
+    el.innerHTML = icon(el.dataset.icon);
+  });
+}
+let user = null,
+  cityNames = [],
+  rides = [],
+  pendingAction = null,
+  searchSerial = 0,
+  dialogSerial = 0,
+  lastSearchOptions = {};
+async function api(path, options = {}) {
+  const response = await fetch("/api" + path, {
+    credentials: "same-origin",
+    ...options,
+    headers: { "Content-Type": "application/json", ...options.headers },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(
+      data.error || "We could not complete that request. Please try again.",
+    );
+    error.status = response.status;
+    error.details = data.details;
+    throw error;
+  }
+  return data;
+}
+const post = (path, body) =>
+  api(path, { method: "POST", body: JSON.stringify(body) });
+const patch = (path, body) =>
+  api(path, { method: "PATCH", body: JSON.stringify(body) });
+function toast(message) {
+  $("toast").textContent = message;
+  $("toast").classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => $("toast").classList.remove("show"), 5000);
+}
+function showDialog(title, content, kicker = "ROUTENG") {
+  dialogSerial++;
+  $("dialog-kicker").textContent = kicker;
+  $("dialog-content").innerHTML =
+    `<h2 id="dialog-title">${esc(title)}</h2>${content}`;
+  if (!$("app-dialog").open) $("app-dialog").showModal();
+  $("app-dialog").scrollTop = 0;
+  hydrateIcons($("app-dialog"));
+}
+function closeDialog() {
+  dialogSerial++;
+  pendingAction = null;
+  $("app-dialog").close();
+}
+function formError(form, error) {
+  form.querySelector(".form-error").textContent = error.details?.length
+    ? error.details.map((d) => d.message).join(" · ")
+    : error.message;
+}
+function bindForm(id, action) {
+  const form = $(id);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const btn = form.querySelector("[type=submit]");
+    const text = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Please wait…";
+    form.querySelector(".form-error").textContent = "";
+    try {
+      await action(Object.fromEntries(new FormData(form)), form);
+    } catch (error) {
+      formError(form, error);
+    } finally {
+      if (btn.isConnected) {
+        btn.disabled = false;
+        btn.textContent = text;
+      }
+    }
+  });
+}
+function requireUser(action) {
+  if (user) {
+    action();
+    return;
+  }
+  pendingAction = action;
+  showAuth();
+}
+function updateAccount() {
+  $("account-label").textContent = user
+    ? user.fullName.split(" ")[0]
+    : "Log in";
+  $("account-button").setAttribute(
+    "aria-label",
+    user ? "Open account menu" : "Log in or create account",
+  );
+  $("account-menu").innerHTML = user
+    ? '<button data-account="trips">My trips</button><button data-account="driving">My published rides</button><button data-account="notifications">Notifications</button><button data-account="profile">My profile</button><button data-account="logout">Log out</button>'
+    : "";
+}
+function showAuth(register = false) {
+  showDialog(
+    register ? "A good journey starts with you." : "Good to have you back.",
+    `<p class="dialog-sub">${register ? "Join the people making travel across Nigeria better." : "Log in to book a seat or share your next journey."}</p><form class="app-form" id="auth-form">${register ? '<label>Full name<input name="fullName" autocomplete="name" minlength="2" maxlength="120" required placeholder="Your full name"></label><label>Phone number (optional)<input name="phone" type="tel" autocomplete="tel" minlength="7" maxlength="30" placeholder="080…"></label>' : ""}<label>Email address<input name="email" type="email" autocomplete="email" maxlength="255" required placeholder="you@example.com"></label><label>Password<input name="password" type="password" autocomplete="${register ? "new-password" : "current-password"}" minlength="8" maxlength="72" required placeholder="At least 8 characters"></label><div class="form-error" role="alert"></div><button class="button button-primary full-width" type="submit">${register ? "Create account" : "Log in"}</button></form><div class="form-switch">${register ? "Already part of the journey?" : "New around here?"} <button id="auth-switch">${register ? "Log in" : "Create an account"}</button></div>`,
+    register ? "JOIN ROUTENG" : "WELCOME BACK",
+  );
+  $("auth-switch").onclick = () => showAuth(!register);
+  bindForm("auth-form", async (data) => {
+    if (!data.phone) delete data.phone;
+    const result = await post(
+      "/auth/" + (register ? "register" : "login"),
+      data,
+    );
+    user = result.user;
+    updateAccount();
+    const next = pendingAction;
+    pendingAction = null;
+    $("app-dialog").close();
+    toast(`Welcome, ${user.fullName.split(" ")[0]}!`);
+    if (next) next();
+  });
+}
+function cityOptions(selected = "") {
+  return (
+    '<option value="">Select a city</option>' +
+    cityNames
+      .map(
+        (c) => `<option ${c === selected ? "selected" : ""}>${esc(c)}</option>`,
+      )
+      .join("")
+  );
+}
+function renderPopularRoutes() {
+  const routes = [
+    ["Lagos", "Ibadan", 3500, "THE EVERYDAY ESCAPE", "bridge"],
+    ["Abuja", "Kaduna", 5000, "NORTHBOUND & GOOD COMPANY", "mosque"],
+    ["Lagos", "Abuja", 18000, "TWO CITIES. ENDLESS POSSIBILITIES.", "skyline"],
+    ["Enugu", "Onitsha", 3000, "A LITTLE CLOSER TO HOME", "hills"],
+  ];
+  $("route-grid").innerHTML = routes
+    .map(
+      ([from, to, price, label, art]) =>
+        `<button class="route-card" data-route="${from}|${to}"><div class="route-art">${cityArt(art)}<span>${label}</span></div><div class="route-info"><h3>${from} <span>→</span> ${to}</h3><div class="route-card-bottom"><div><small>From</small><strong>${money(price)} <small>/ seat</small></strong></div><span class="route-arrow">↗</span></div></div></button>`,
+    )
+    .join("");
+}
+function cityArt(type) {
+  const base =
+    '<svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="sky-' +
+    type +
+    '" x2="0" y2="1"><stop stop-color="#d8e8d7"/><stop offset="1" stop-color="#f3ebd1"/></linearGradient></defs><path fill="url(#sky-' +
+    type +
+    ')" d="M0 0h320v180H0z"/><circle cx="260" cy="37" r="17" fill="#f4ebc5"/>';
+  const arts = {
+    bridge:
+      '<path fill="#8bb6ac" d="M0 110h320v70H0z"/><path fill="#b9cac0" d="M0 110V83h22v27h17V71h14v39h22V91h30v19h30V76h20v34Z"/><path d="m-20 170 215-68h125v14H198L18 180" fill="#687f71"/><path d="M188 107V31h7v78M77 145V68h7v75" fill="#476d5e"/><path d="M80 69 27 162m53-93 108 43m4-79-75 100m75-100 70 75" fill="none" stroke="#e9e7ce" stroke-width="2"/><path d="m0 169 195-58h125" fill="none" stroke="#e8e2c7" stroke-width="2"/>',
+    mosque:
+      '<path fill="#adbca2" d="M0 120q45-50 94-6t102-5 124 0v71H0Z"/><path fill="#527d63" d="M48 142V88h7v54m191 0V76h7v66M58 130h181v37H58Z"/><path fill="#dbd5a5" d="M108 130V98q0-16 39-34 39 18 39 34v32Z"/><path fill="#628770" d="M100 130h95v37h-95Z"/><path fill="#304f3c" d="M138 166v-26q10-17 20 0v26Z"/><path d="M147 64V48m-99 36 4-10 4 10m188-12 6-12 6 12" stroke="#6d8560" stroke-width="2" fill="none"/><path fill="#8ba27d" d="M0 161h320v19H0z"/>',
+    skyline:
+      '<path fill="#b6c5ab" d="M0 151V83h32v68h9V65h25v86h18V94h35v57h13V48h27v103h13V72h35v79h10V30h31v121h20V80h25v71h27v29H0Z"/><path fill="#6e9278" d="M0 163v-49h39v49h13V92h24v71h20V118h29v45h18V78h39v85h21v-59h29v59h21V95h30v68h37v17H0Z"/><path d="M144 87h28m-28 12h28m-28 12h28m-28 12h28m-28 12h28m-28 12h28M57 102h12m-12 12h12m-12 12h12" stroke="#c8d3b6" stroke-width="3"/><path fill="#4f7560" d="M0 169q70-15 160 0t160-5v16H0Z"/>',
+    hills:
+      '<path fill="#bdc9a6" d="M0 125 73 46l60 79 74-103 113 111v47H0Z"/><path fill="#8fa783" d="m0 158 98-81 53 68 39-38 130 58v15H0Z"/><path fill="#587d61" d="M0 164q58-48 129-13t191-15v44H0Z"/><path fill="#ccbd8e" d="M144 180q54-33 24-43 56 16 22 43Z"/><path fill="#365d49" d="m33 152 11-29 11 29h-8v17h-6v-17Zm230-10 14-38 14 38h-11v24h-6v-24Z"/>',
+  };
+  return base + arts[type] + "</svg>";
+}
+function renderRides() {
+  let items = [...rides];
+  if ($("verified-only").checked)
+    items = items.filter((r) => r.driver.verificationStatus === "VERIFIED");
+  items.sort((a, b) =>
+    $("sort").value === "price"
+      ? a.priceNaira - b.priceNaira
+      : $("sort").value === "rating"
+        ? b.driver.rating - a.driver.rating
+        : new Date(a.departureAt) - new Date(b.departureAt),
+  );
+  $("results-summary").textContent =
+    `${items.length} ${items.length === 1 ? "ride" : "rides"} available · Times shown in West Africa Time`;
+  $("results").innerHTML = items.length
+    ? items
+        .map(
+          (r) =>
+            `<article class="ride-card"><div class="ride-route"><div><h3>${esc(r.origin)} → ${esc(r.destination)}</h3><span class="ride-time">${dateLabel(r.departureAt)} · ${timeLabel(r.departureAt)}</span></div><div><strong>${money(r.priceNaira)}</strong><small>per seat</small></div></div><div class="ride-pickup">${icon("pin")} ${esc(r.pickupPoint)} · ${r.seatsAvailable} ${r.seatsAvailable === 1 ? "seat" : "seats"} left</div><div class="ride-footer"><span class="avatar">${initials(r.driver.name)}</span><div><div class="driver-name">${esc(r.driver.name)}${r.driver.verificationStatus === "VERIFIED" ? '<span class="verified-mark" title="Verified profile">✓</span>' : ""}</div><div class="driver-meta">${r.driver.totalRatings ? "★ " + r.driver.rating.toFixed(1) + " · " + r.driver.totalRatings + " reviews" : "New member"} · ${esc(r.vehicle?.makeModel || "Vehicle not specified")}</div></div><button class="button button-outline" data-ride="${esc(r.id)}">View ride ↗</button></div></article>`,
+        )
+        .join("")
+    : `<div class="empty-state">${icon("route")}<h3>Your people are still on their way.</h3><p>No rides match these filters yet. Try a different date or city,<br>or publish a journey of your own.</p><button class="button button-primary offer-trigger">Publish a ride</button></div>`;
+}
+async function searchRides({ allDates = false, allRoutes = false } = {}) {
+  lastSearchOptions = { allDates, allRoutes };
+  const serial = ++searchSerial,
+    button = $("search-form").querySelector("[type=submit]");
+  button.disabled = true;
+  button.innerHTML = "Finding your ride…";
+  const from = $("from").value.trim(),
+    to = $("to").value.trim();
+  if (from && to && from.toLowerCase() === to.toLowerCase()) {
+    toast("Choose two different cities for your journey.");
+    button.disabled = false;
+    button.innerHTML = icon("search") + " Find a ride";
+    return;
+  }
+  const query = new URLSearchParams({
+    passengers: $("passengers").value,
+    limit: "50",
+  });
+  if (!allRoutes) {
+    if (from) query.set("origin", from);
+    if (to) query.set("destination", to);
+  }
+  if (!allDates && $("date").value) query.set("date", $("date").value);
+  $("results-section").hidden = false;
+  $("results-summary").textContent = "Looking for people going your way…";
+  $("results").innerHTML = "";
+  $("results-section").scrollIntoView({ behavior: "smooth", block: "start" });
+  try {
+    const result = await api("/rides?" + query);
+    if (serial !== searchSerial) return;
+    rides = result.rides;
+    $("results-heading").textContent =
+      !allRoutes && (from || to)
+        ? `${from || "Anywhere"} → ${to || "Anywhere"}`
+        : "Rides going your way";
+    renderRides();
+    history.replaceState(null, "", "#search?" + query);
+  } catch (error) {
+    if (serial !== searchSerial) return;
+    $("results-summary").textContent = "We could not load rides.";
+    $("results").innerHTML =
+      `<div class="empty-state"><h3>Let's try that again.</h3><p>${esc(error.message)}</p><button class="button button-primary" id="retry-search">Retry search</button></div>`;
+    $("retry-search").onclick = () => searchRides({ allDates, allRoutes });
+  } finally {
+    if (serial === searchSerial) {
+      button.disabled = false;
+      button.innerHTML = icon("search") + " Find a ride";
+    }
+  }
+}
+async function viewRide(id) {
+  const serial = dialogSerial;
+  try {
+    const { ride: r } = await api("/rides/" + encodeURIComponent(id));
+    if (dialogSerial !== serial) return;
+    showDialog(
+      `${r.origin} → ${r.destination}`,
+      `<p class="dialog-sub">${dateLabel(r.departureAt)} · ${timeLabel(r.departureAt)} WAT</p><div class="detail-route"><div class="detail-stop"><span></span><div>${esc(r.origin)}<div class="detail-pickup">${esc(r.pickupPoint)}</div></div></div><div class="detail-stop"><span></span>${esc(r.destination)}</div></div><div class="detail-driver"><span class="avatar">${initials(r.driver.name)}</span><div><div class="driver-name">${esc(r.driver.name)} ${r.driver.verificationStatus === "VERIFIED" ? '<span class="verified-mark">✓ Verified profile</span>' : ""}</div><div class="driver-meta">${r.driver.totalRatings ? "★ " + r.driver.rating.toFixed(1) + " · " + r.driver.totalRatings + " reviews" : "New member · No reviews yet"}</div></div></div><div class="detail-facts"><div><small>Vehicle</small>${esc(r.vehicle?.makeModel || "Not specified")}${r.vehicle?.color ? " · " + esc(r.vehicle.color) : ""}</div><div><small>Available seats</small>${r.seatsAvailable} of ${r.seatsTotal}</div></div>${r.notes ? `<p class="dialog-sub">${esc(r.notes)}</p>` : ""}<form id="booking-form" class="app-form"><label>Seats to request<select class="booking-seats" id="booking-seats" name="seats">${Array.from({ length: r.seatsAvailable }, (_, i) => `<option value="${i + 1}">${i + 1} ${i + 1 === 1 ? "seat" : "seats"}</option>`).join("")}</select></label><div class="detail-price"><span>Total contribution</span><strong id="booking-total">${money(r.priceNaira)}</strong></div><div class="form-error" role="alert"></div><button class="button button-primary full-width" type="submit" ${r.status !== "OPEN" || r.seatsAvailable < 1 ? "disabled" : ""}>${user?.id === r.driver.id ? "This is your ride" : "Request to book"}</button></form><p class="fine-print">No charge when you request. Your driver will need to accept your booking. Confirm your pickup point and payment arrangements before travelling.</p>`,
+      "YOUR RIDE DETAILS",
+    );
+    if (user?.id === r.driver.id)
+      $("booking-form").querySelector("[type=submit]").disabled = true;
+    $("booking-seats").onchange = () => {
+      $("booking-total").textContent = money(
+        r.priceNaira * Number($("booking-seats").value),
+      );
+    };
+    bindForm("booking-form", async (data) => {
+      if (!user) {
+        pendingAction = () => viewRide(id);
+        showAuth();
+        return;
+      }
+      await post("/rides/" + id + "/book", {
+        seats: Number(data.seats),
+        pickupPoint: r.pickupPoint,
+      });
+      showDialog(
+        "You’re one step closer.",
+        `<div class="empty-state">${icon("check")}<h3>Your seat request is with ${esc(r.driver.name.split(" ")[0])}.</h3><p>We'll keep you updated when your driver responds.<br>You can follow your request in My trips.</p><button class="button button-primary" id="view-my-trips">Go to My trips</button></div>`,
+        "REQUEST SENT",
+      );
+      $("view-my-trips").onclick = () => showDashboard();
+      if (!$("results-section").hidden) searchRides(lastSearchOptions);
+    });
+  } catch (error) {
+    toast(error.message);
+  }
+}
+function offerRide() {
+  requireUser(async () => {
+    let vehicles;
+    try {
+      ({ vehicles } = await api("/vehicles/me"));
+    } catch (error) {
+      toast(error.message);
+      return;
+    }
+    showDialog(
+      "A spare seat. A new connection.",
+      `<p class="dialog-sub">Set your journey. We'll help you find people going your way.</p><form class="app-form" id="offer-form"><div class="form-row"><label>Leaving from<select name="origin" required>${cityOptions($("from").value)}</select></label><label>Going to<select name="destination" required>${cityOptions($("to").value)}</select></label></div><label>Pickup point<input name="pickupPoint" minlength="2" maxlength="180" required placeholder="e.g. Ikeja City Mall car park"></label><div class="form-row"><label>Departure date<input name="date" type="date" value="${today()}" min="${today()}" required></label><label>Time (WAT)<input name="time" type="time" value="08:00" required></label></div><div class="form-row"><label>Seats available<select name="seatsTotal"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select></label><label>Price per seat (₦)<input name="priceNaira" type="number" min="0" max="1000000" step="50" required placeholder="5,000"></label></div><label>Vehicle<select name="vehicleId" id="offer-vehicle">${vehicles.map((v) => `<option value="${esc(v.id)}">${esc(v.makeModel)}${v.color ? " · " + esc(v.color) : ""}</option>`).join("")}<option value="new" ${vehicles.length ? "" : "selected"}>＋ Add a vehicle</option></select></label><div id="new-vehicle-fields" ${vehicles.length ? "hidden" : ""}><div class="form-row"><label>Make & model<input name="makeModel" minlength="2" maxlength="120" placeholder="Toyota Corolla" ${vehicles.length ? "" : "required"}></label><label>Colour<input name="color" maxlength="50" placeholder="Silver"></label></div><div class="form-row"><label>Total passenger seats<input name="vehicleSeats" type="number" value="4" min="1" max="12"></label><label>Plate number<input name="plateNumber" maxlength="30" placeholder="Optional"></label></div></div><label>Anything passengers should know?<textarea name="notes" rows="2" maxlength="1000" placeholder="Luggage space, stops, or a little about the journey…"></textarea></label><div class="form-error" role="alert"></div><button class="button button-primary full-width" type="submit">Publish my ride</button><p class="fine-print">Only publish a journey you intend to drive. Confirm passenger requests and pickup arrangements before departure.</p></form>`,
+      "YOUR ROAD. YOUR COMPANY.",
+    );
+    const syncVehicle = () => {
+      $("new-vehicle-fields").hidden = $("offer-vehicle").value !== "new";
+      $("new-vehicle-fields").querySelector("[name=makeModel]").required =
+        $("offer-vehicle").value === "new";
+    };
+    $("offer-vehicle").onchange = syncVehicle;
+    bindForm("offer-form", async (data) => {
+      if (data.origin === data.destination)
+        throw new Error("Choose two different cities.");
+      let vehicleId = data.vehicleId;
+      if (vehicleId === "new") {
+        if (Number(data.seatsTotal) > Number(data.vehicleSeats))
+          throw new Error(
+            "Your offered seats cannot exceed your vehicle capacity.",
+          );
+        const result = await post("/vehicles", {
+          makeModel: data.makeModel,
+          color: data.color,
+          plateNumber: data.plateNumber,
+          seats: Number(data.vehicleSeats),
+        });
+        vehicleId = result.vehicle.id;
+      }
+      const { ride } = await post("/rides", {
+        origin: data.origin,
+        destination: data.destination,
+        pickupPoint: data.pickupPoint,
+        departureAt: new Date(
+          data.date + "T" + data.time + ":00+01:00",
+        ).toISOString(),
+        seatsTotal: Number(data.seatsTotal),
+        priceNaira: Number(data.priceNaira),
+        vehicleId,
+        notes: data.notes,
+      });
+      $("app-dialog").close();
+      toast("Your ride is live. Here’s to good company!");
+      await viewRide(ride.id);
+    });
+  });
+}
+async function showDashboard(tab = "passenger") {
+  if (!user) {
+    requireUser(() => showDashboard(tab));
+    return;
+  }
+  showDialog(
+    "Every journey, in one place.",
+    `<div class="dashboard-tabs"><button data-tab="passenger" class="${tab === "passenger" ? "active" : ""}">My bookings</button><button data-tab="driver" class="${tab === "driver" ? "active" : ""}">Driving</button><button data-tab="requests" class="${tab === "requests" ? "active" : ""}">Requests</button></div><div id="dashboard-content" aria-live="polite"><p class="dialog-sub">Loading your journeys…</p></div>`,
+    "MY TRIPS",
+  );
+  const serial = dialogSerial;
+  document
+    .querySelectorAll("[data-tab]")
+    .forEach((btn) => (btn.onclick = () => showDashboard(btn.dataset.tab)));
+  try {
+    let items;
+    if (tab === "driver") {
+      items = (await api("/rides/me/published")).rides;
+    } else {
+      items = (
+        await api(tab === "requests" ? "/bookings/driver" : "/bookings/me")
+      ).bookings;
+    }
+    if (serial !== dialogSerial) return;
+    $("dashboard-content").innerHTML = items.length
+      ? items
+          .map((item) => {
+            const isRide = tab === "driver",
+              active = ["PENDING", "ACCEPTED"].includes(item.status),
+              future = new Date(item.departureAt) > new Date();
+            let actions = "";
+            if (isRide) {
+              if (["OPEN", "FULL"].includes(item.status) && future)
+                actions = `<button class="text-button" data-cancel-ride="${esc(item.id)}">Cancel ride</button>`;
+            } else if (tab === "requests") {
+              if (item.status === "PENDING")
+                actions = `<button class="button button-primary" data-booking="${esc(item.id)}" data-status="ACCEPTED">Accept</button><button class="text-button" data-booking="${esc(item.id)}" data-status="REJECTED">Decline</button>`;
+              if (item.status === "ACCEPTED" && !future)
+                actions = `<button class="button button-primary" data-booking="${esc(item.id)}" data-status="COMPLETED">Mark completed</button>`;
+            } else {
+              if (active && future)
+                actions = `<button class="text-button" data-booking="${esc(item.id)}" data-status="CANCELLED">Cancel booking</button>`;
+              if (item.paymentStatus === "PENDING" && item.paymentReference)
+                actions += `<button class="text-button" data-verify="${esc(item.paymentReference)}">Verify payment</button>`;
+              if (
+                item.status === "ACCEPTED" &&
+                !["PAID", "PENDING"].includes(item.paymentStatus) &&
+                future
+              )
+                actions += `<button class="text-button" data-pay="${esc(item.id)}">Pay online</button>`;
+              if (item.status === "COMPLETED")
+                actions += `<button class="text-button" data-review="${esc(item.rideId)}">Leave a review</button>`;
+              actions += `<button class="text-button" data-share="${esc(item.id)}">Copy trip details</button>`;
+            }
+            return `<article class="trip-item"><span class="status ${item.status.toLowerCase()}">${item.status === "PENDING" ? "AWAITING DRIVER" : item.status}</span><h3>${esc(item.origin)} → ${esc(item.destination)}</h3><p>${dateLabel(item.departureAt)} · ${timeLabel(item.departureAt)} WAT<br>${isRide ? item.seatsAvailable + " seats available · " + money(item.priceNaira) + " / seat" : esc(tab === "requests" ? item.passengerName : item.driverName) + " · " + item.seats + " seat(s) · " + money(item.amountNaira)}${!isRide ? "<br>Payment: " + esc(item.paymentStatus.toLowerCase()) : ""}${item.rideStatus === "CANCELLED" ? "<br>This ride has been cancelled." : ""}</p><div class="trip-actions">${actions}</div><div class="form-error" role="alert"></div></article>`;
+          })
+          .join("")
+      : `<div class="empty-state">${icon("route")}<h3>A new journey is waiting.</h3><p>${tab === "requests" ? "Passenger requests will appear here." : tab === "driver" ? "Publish your first ride to get started." : "Your bookings will appear here when you request a seat."}</p><button class="button button-primary" id="dashboard-start">${tab === "driver" ? "Publish a ride" : "Explore rides"}</button></div>`;
+    if ($("dashboard-start"))
+      $("dashboard-start").onclick = () => {
+        if (tab === "driver") offerRide();
+        else {
+          closeDialog();
+          searchRides({ allDates: true, allRoutes: true });
+        }
+      };
+    $("dashboard-content").onclick = async (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      const item = button.closest(".trip-item");
+      if (!item) return;
+      button.disabled = true;
+      try {
+        if (button.dataset.booking) {
+          await patch("/bookings/" + button.dataset.booking + "/status", {
+            status: button.dataset.status,
+          });
+          toast("Booking updated.");
+          showDashboard(tab);
+        }
+        if (button.dataset.cancelRide) {
+          showDialog(
+            "Cancel this journey?",
+            `<p class="dialog-sub">Your passengers will be notified and active bookings cancelled. Any paid bookings will need refund handling.</p><div class="trip-actions"><button class="button button-primary" id="confirm-cancel">Yes, cancel ride</button><button class="text-button" id="keep-ride">Keep my ride</button></div><p class="form-error" id="cancel-error" role="alert"></p>`,
+            "CHANGE OF PLANS",
+          );
+          $("keep-ride").onclick = () => showDashboard("driver");
+          $("confirm-cancel").onclick = async () => {
+            try {
+              await api("/rides/" + button.dataset.cancelRide, {
+                method: "DELETE",
+              });
+              toast("Ride cancelled. Passengers have been notified.");
+              showDashboard("driver");
+            } catch (error) {
+              $("cancel-error").textContent = error.message;
+            }
+          };
+        }
+        if (button.dataset.pay) {
+          const result = await post("/payments/initialize", {
+            bookingId: button.dataset.pay,
+          });
+          const url = new URL(result.authorizationUrl);
+          if (
+            url.protocol !== "https:" ||
+            url.hostname !== "checkout.paystack.com"
+          )
+            throw new Error("Unexpected payment URL. Please contact support.");
+          location.assign(url.href);
+        }
+        if (button.dataset.verify) {
+          const result = await api(
+            "/payments/verify/" + encodeURIComponent(button.dataset.verify),
+          );
+          toast(
+            result.paid
+              ? "Payment confirmed."
+              : "Payment is " + result.status + ".",
+          );
+          showDashboard(tab);
+        }
+        if (button.dataset.review) showReview(button.dataset.review);
+        if (button.dataset.share) {
+          const b = items.find((x) => x.id === button.dataset.share);
+          await navigator.clipboard.writeText(
+            `My RouteNG journey: ${b.origin} → ${b.destination}\n${dateLabel(b.departureAt)} ${timeLabel(b.departureAt)} WAT\nDriver: ${b.driverName}\nPickup: ${b.pickupPoint}\nBooking: ${b.id}`,
+          );
+          toast("Trip details copied. Share with someone you trust.");
+        }
+      } catch (error) {
+        item.querySelector(".form-error").textContent = error.message;
+      } finally {
+        if (button.isConnected) button.disabled = false;
+      }
+    };
+  } catch (error) {
+    if (serial === dialogSerial)
+      $("dashboard-content").innerHTML =
+        `<div class="form-error">${esc(error.message)}</div>`;
+  }
+}
+function showReview(id) {
+  showDialog(
+    "How was your journey?",
+    `<form class="app-form" id="review-form"><label>Your rating<select name="rating"><option value="5">5 — Excellent</option><option value="4">4 — Good</option><option value="3">3 — Okay</option><option value="2">2 — Could be better</option><option value="1">1 — Poor</option></select></label><label>Your experience<textarea name="comment" rows="4" maxlength="500" placeholder="Help the next passenger make a choice."></textarea></label><div class="form-error" role="alert"></div><button class="button button-primary" type="submit">Submit review</button></form>`,
+    "GOOD JOURNEYS DESERVE A WORD",
+  );
+  bindForm("review-form", async (data) => {
+    await post("/rides/" + id + "/reviews", {
+      rating: Number(data.rating),
+      comment: data.comment,
+    });
+    toast("Thanks for sharing your experience.");
+    showDashboard();
+  });
+}
+async function showNotifications() {
+  showDialog(
+    "Your journey updates.",
+    '<div id="notification-list"><p class="dialog-sub">Loading updates…</p></div>',
+    "NOTIFICATIONS",
+  );
+  const serial = dialogSerial;
+  try {
+    const { notifications } = await api("/notifications");
+    if (serial !== dialogSerial) return;
+    $("notification-list").innerHTML = notifications.length
+      ? notifications
+          .map(
+            (n) =>
+              `<article class="notification-item"><h3>${esc(n.title)}</h3><p>${esc(n.message)}</p><small class="fine-print">${dateLabel(n.created_at)}</small>${!n.read_at ? `<button class="text-button" data-read="${esc(n.id)}">Mark as read</button>` : ""}</article>`,
+          )
+          .join("")
+      : '<p class="dialog-sub">You’re all caught up. Updates about your rides will appear here.</p>';
+    $("notification-list").onclick = async (e) => {
+      const btn = e.target.closest("[data-read]");
+      if (btn) {
+        try {
+          await patch("/notifications/" + btn.dataset.read + "/read", {});
+          btn.remove();
+        } catch (error) {
+          toast(error.message);
+        }
+      }
+    };
+  } catch (error) {
+    if (serial === dialogSerial)
+      $("notification-list").textContent = error.message;
+  }
+}
+function showProfile() {
+  showDialog(
+    "Your RouteNG profile.",
+    `<div class="detail-driver"><span class="avatar">${initials(user.fullName)}</span><div><strong>${esc(user.fullName)}</strong><div class="driver-meta">${esc(user.verificationStatus.toLowerCase())} profile</div></div></div><div class="detail-facts"><div><small>Email address</small>${esc(user.email)}</div><div><small>Phone number</small>${esc(user.phone || "Not provided")}</div><div><small>Rating</small>${user.totalRatings ? "★ " + user.rating.toFixed(1) : "No reviews yet"}</div></div><p class="fine-print">Profile verification is managed by the RouteNG team. Never share a password, OTP or identity document with another traveller.</p>`,
+    "MY ACCOUNT",
+  );
+}
+const articles = {
+  "safety-guide": [
+    "A little preparation. A better journey.",
+    "<h3>Before you go</h3><p>Read your driver’s profile and reviews. Confirm the vehicle, pickup point, luggage space and total contribution. Meet in a busy, well-lit public place.</p><h3>Keep someone in the loop</h3><p>Use My trips to copy your journey details and send them to someone you trust. Share your live location using your preferred messaging app.</p><h3>Trust your judgement</h3><p>Check that the driver and vehicle match your ride details. Do not travel if anything feels wrong. Wear a seat belt and avoid sharing sensitive personal information.</p><h3>Need help?</h3><p>In immediate danger, contact local emergency services. Save the ride and booking reference for any report. Profile verification and reviews are useful signals, but cannot guarantee a safe journey.</p>",
+  ],
+  "community-link": [
+    "Good company starts with respect.",
+    "<h3>Be the person you’d want to travel with</h3><p>Be punctual, communicate clearly, keep the car clean, and respect everyone’s personal space. Agree on luggage, stops and music before you leave.</p><h3>Keep it honest</h3><p>Publish accurate ride details. Only book journeys you intend to take. No discrimination, harassment, dangerous driving, false profiles or unexpected charges.</p><h3>Plans change. Let people know.</h3><p>Cancel through My trips as early as possible. Leave a fair review after a completed journey.</p>",
+  ],
+  "help-link": [
+    "A hand with your next journey.",
+    "<h3>Booking or cancellation</h3><p>Open your account menu and choose My trips. You can see your booking status, copy trip details or cancel before departure.</p><h3>Offering a ride</h3><p>Choose Publish a ride, add your vehicle and journey details, then manage passenger requests from My trips → Requests.</p><h3>Payments</h3><p>A seat request does not charge you. Online payments require an accepted booking and an enabled payment provider. If a paid ride is cancelled, retain your booking and payment references for refund support.</p><h3>Launch preview</h3><p>This version is for testing the service. An operator support channel will need to be configured before public launch.</p>",
+  ],
+  "privacy-link": [
+    "Your information, handled with care.",
+    "<p>This preview stores your account information, password hash, vehicles, rides, bookings, notifications and reviews in its application database. Passwords are hashed; session tokens use an HTTP-only cookie.</p><h3>What other travellers can see</h3><p>Public ride details include driver name, rating, verification status, vehicle model, pickup point and journey information. Drivers can see passenger details needed to manage their requests.</p><h3>Before public launch</h3><p>The service operator must provide its legal identity, privacy contact, retention periods and a process for access or deletion requests. This preview notice must be reviewed and completed before real customer use.</p>",
+  ],
+  "terms-link": [
+    "A shared journey. A shared understanding.",
+    "<p>RouteNG connects drivers and passengers for shared journeys. Drivers set their routes, departure times and contributions. Passengers request seats; drivers accept requests.</p><h3>Booking and payment</h3><p>A pending request is not a confirmed ride. Review all details before travelling. Do not send payment or disclose sensitive information in response to an unexpected request.</p><h3>Preview service</h3><p>This is a development preview. Pricing, sample profiles and availability may be demonstration data. The operator must complete its legal terms, cancellation and refund policies before accepting real customers.</p>",
+  ],
+};
+document.addEventListener("click", (event) => {
+  const route = event.target.closest("[data-route]");
+  if (route) {
+    [$("from").value, $("to").value] = route.dataset.route.split("|");
+    searchRides();
+  }
+  const ride = event.target.closest("[data-ride]");
+  if (ride) viewRide(ride.dataset.ride);
+  if (event.target.closest(".offer-trigger")) offerRide();
+  if (event.target.closest(".trips-trigger"))
+    requireUser(() => showDashboard());
+  if (!event.target.closest(".nav-actions")) {
+    $("account-menu").hidden = true;
+    $("account-button").setAttribute("aria-expanded", "false");
+  }
+});
+$("account-button").onclick = () => {
+  if (!user) {
+    showAuth();
+    return;
+  }
+  $("account-menu").hidden = !$("account-menu").hidden;
+  $("account-button").setAttribute(
+    "aria-expanded",
+    String(!$("account-menu").hidden),
+  );
+};
+$("account-menu").onclick = async (event) => {
+  const btn = event.target.closest("[data-account]");
+  if (!btn) return;
+  $("account-menu").hidden = true;
+  $("account-button").setAttribute("aria-expanded", "false");
+  const action = btn.dataset.account;
+  if (action === "trips") showDashboard();
+  if (action === "driving") showDashboard("driver");
+  if (action === "notifications") showNotifications();
+  if (action === "profile") showProfile();
+  if (action === "logout") {
+    try {
+      await post("/auth/logout", {});
+      user = null;
+      updateAccount();
+      toast("You’re logged out. See you on the road.");
+    } catch (error) {
+      toast(error.message);
+    }
+  }
+};
+$("dialog-close").onclick = closeDialog;
+$("app-dialog").addEventListener("cancel", () => {
+  pendingAction = null;
+  dialogSerial++;
+});
+$("app-dialog").addEventListener("click", (event) => {
+  if (event.target === $("app-dialog")) {
+    const r = event.target.getBoundingClientRect();
+    if (
+      event.clientX < r.left ||
+      event.clientX > r.right ||
+      event.clientY < r.top ||
+      event.clientY > r.bottom
+    )
+      closeDialog();
+  }
+});
+$("search-form").onsubmit = (event) => {
+  event.preventDefault();
+  searchRides();
+};
+$("swap").onclick = () => {
+  [$("from").value, $("to").value] = [$("to").value, $("from").value];
+};
+$("sort").onchange = renderRides;
+$("verified-only").onchange = renderRides;
+$("close-results").onclick = () => {
+  searchSerial++;
+  $("results-section").hidden = true;
+  const btn = $("search-form").querySelector("[type=submit]");
+  btn.disabled = false;
+  btn.innerHTML = icon("search") + " Find a ride";
+  history.replaceState(null, "", location.pathname);
+  $("from").focus();
+};
+$("browse-rides").onclick = () =>
+  searchRides({ allDates: true, allRoutes: true });
+$("back-to-search").onclick = () => {
+  $("search-form").scrollIntoView({ behavior: "smooth", block: "center" });
+  $("from").focus({ preventScroll: true });
+};
+Object.entries(articles).forEach(([id, [title, content]]) => {
+  $(id).onclick = () =>
+    showDialog(title, `<div class="article-copy">${content}</div>`);
+});
+async function init() {
+  hydrateIcons();
+  renderPopularRoutes();
+  $("date").min = today();
+  $("date").value = today();
+  $("year").textContent = new Date().getFullYear();
+  const results = await Promise.allSettled([api("/cities"), api("/auth/me")]);
+  if (results[0].status === "fulfilled") {
+    cityNames = results[0].value.cities;
+    $("cities").innerHTML = cityNames
+      .map((c) => `<option value="${esc(c)}"></option>`)
+      .join("");
+  }
+  if (results[1].status === "fulfilled") {
+    user = results[1].value.user;
+    updateAccount();
+  }
+  const hash = location.hash;
+  if (hash.startsWith("#search?")) {
+    const q = new URLSearchParams(hash.slice(8));
+    $("from").value = q.get("origin") || "";
+    $("to").value = q.get("destination") || "";
+    $("date").value = q.get("date") || "";
+    $("passengers").value = q.get("passengers") || "1";
+    searchRides({ allDates: !q.has("date") });
+  }
+}
+init()
+  .then(async () => {
+    const q = new URLSearchParams(location.search);
+    if (q.get("payment") === "return" && q.get("reference")) {
+      requireUser(async () => {
+        try {
+          const result = await api(
+            "/payments/verify/" + encodeURIComponent(q.get("reference")),
+          );
+          toast(
+            result.paid
+              ? result.requiresRefund
+                ? "Payment received for a cancelled booking. Contact support for a refund."
+                : "Payment confirmed. You’re all set."
+              : "Payment is " + result.status + ".",
+          );
+          history.replaceState(null, "", location.pathname);
+          showDashboard();
+        } catch (error) {
+          toast(error.message);
+        }
+      });
+    }
+  })
+  .catch(() =>
+    toast("Some features could not load. Please refresh to try again."),
+  );
