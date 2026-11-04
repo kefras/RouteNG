@@ -1,0 +1,34 @@
+# Free web hosting only. Supply a free external PostgreSQL connection string.
+# No paid Render database is created. The web service sleeps when idle.
+services:
+  - type: web
+    name: routeng
+    runtime: node
+    region: frankfurt
+    plan: free
+    branch: main
+    repo: https://github.com/kefras/RouteNG
+    buildCommand: npm ci --omit=dev
+    startCommand: npm run db:migrate && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "24"
+      - key: HOST
+        value: 0.0.0.0
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: routeng
+          envVarKey: RENDER_EXTERNAL_URL
+

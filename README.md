@@ -63,6 +63,12 @@ The 12 integration tests cover authentication, origin rejection, ride validation
 
 ## Production deployment
 
+### Free Render app with an external database
+
+`render.yaml` defines a free Node.js service only; it does not create paid resources. Supply a PostgreSQL URL from a free provider such as Neon when creating the Blueprint. Use the provider's TLS-enabled URL (for Neon, include its supplied SSL/channel-binding parameters). The service initializes the schema at startup, generates its JWT secret through Render, enables secure cookies and uses `/api/health` for readiness. No demo accounts are seeded.
+
+Free services can sleep when idle and have usage limits. This configuration also works when the Render workspace's free database allowance is already used: provide a separate external database without changing existing resources. Supply the database connection before deploying.
+
 Deploy the Node server with a managed PostgreSQL database. A static-only host cannot run this full-stack application. The Sites hosting runtime uses Cloudflare Workers and cannot directly run the existing Express/PostgreSQL process, so this version is delivered as a local full-stack app and deployable source rather than a static Site with nonfunctional APIs.
 
 1. Set `NODE_ENV=production`, `DATABASE_URL`, a random `JWT_SECRET` of at least 32 characters, `COOKIE_SECURE=true` and the exact HTTPS `FRONTEND_URL`.
